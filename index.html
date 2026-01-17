@@ -1,0 +1,729 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusReader - RSVP Speed Reader</title>
+    <style>
+        :root {
+            /* Light Theme Variables */
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --highlight-color: #dc2626;
+            --border-color: #e9ecef;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --font-display: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme Variables */
+            --bg-color: #111827;
+            --card-bg: #1f2937;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent: #60a5fa;
+            --accent-hover: #3b82f6;
+            --highlight-color: #f87171;
+            --border-color: #374151;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent scrolling during reading */
+        }
+
+        /* --- Header --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle:hover {
+            background-color: var(--border-color);
+        }
+
+        /* --- Main Layout --- */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* --- Setup View (Input) --- */
+        #setup-view {
+            width: 100%;
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: 2px solid var(--accent);
+            border-color: transparent;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            align-self: flex-start;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* --- Reader View (Display) --- */
+        #reader-view {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* The focal point display */
+        #word-container {
+            font-size: 4rem; /* Large font for readability */
+            font-weight: 500;
+            color: var(--text-main);
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            user-select: none;
+            /* Monospaced feeling helps prevent jitter, but we use a clean sans */
+            font-variant-numeric: tabular-nums; 
+        }
+
+        /* The red letter (Pivot) */
+        .pivot-letter {
+            color: var(--highlight-color);
+            font-weight: 700;
+        }
+
+        /* Progress Bar */
+        #progress-container {
+            width: 100%;
+            max-width: 600px;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .stats {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        /* Controls Bar */
+        #controls-bar {
+            position: fixed;
+            bottom: 2rem;
+            background-color: var(--card-bg);
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid var(--border-color);
+            z-index: 20;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-icon:hover {
+            background-color: var(--border-color);
+        }
+        .btn-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        /* Speed Slider */
+        .speed-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 120px;
+        }
+
+        .speed-value {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        /* Separator */
+        .separator {
+            width: 1px;
+            height: 24px;
+            background-color: var(--border-color);
+        }
+
+        /* Toast/Notification */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--text-main);
+            color: var(--bg-color);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+        #toast.show {
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            #word-container {
+                font-size: 2.5rem;
+            }
+            #controls-bar {
+                width: 90%;
+                flex-wrap: wrap;
+                justify-content: center;
+                bottom: 1rem;
+                padding: 1rem;
+            }
+            .separator {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>FocusReader</h1>
+        <button class="theme-toggle" id="theme-btn" aria-label="Toggle Dark Mode" title="Toggle Theme">
+            <!-- Sun Icon -->
+            <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <!-- Moon Icon -->
+            <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Setup Screen -->
+        <section id="setup-view">
+            <div class="input-group">
+                <label for="text-input">Paste your text below</label>
+                <textarea id="text-input" placeholder="Paste article, chapter, or notes here..."></textarea>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.8rem;">
+                    <span id="word-count-preview">0 words</span>
+                    <span>Reading time: <span id="est-time">0 min</span></span>
+                </div>
+            </div>
+            <button class="btn-primary" id="start-btn">Start Reading</button>
+        </section>
+
+        <!-- Reader Screen -->
+        <section id="reader-view">
+            <div id="word-container">Ready</div>
+            
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div class="stats">
+                <span id="progress-text">0 / 0</span>
+            </div>
+
+            <!-- Controls Overlay -->
+            <div id="controls-bar">
+                <!-- Restart -->
+                <button class="btn-icon" id="restart-btn" title="Restart">
+                    <svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+                
+                <div class="separator"></div>
+
+                <!-- Rewind 10 words -->
+                <button class="btn-icon" id="rewind-btn" title="Back 10 Words">
+                    <svg viewBox="0 0 24 24"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></svg>
+                </button>
+
+                <!-- Play/Pause -->
+                <button class="btn-icon" id="play-pause-btn" title="Play/Pause (Space)">
+                    <svg id="icon-play" viewBox="0 0 24 24" style="display:block;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <svg id="icon-pause" viewBox="0 0 24 24" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                </button>
+
+                <!-- Forward 10 words -->
+                <button class="btn-icon" id="forward-btn" title="Forward 10 Words">
+                    <svg viewBox="0 0 24 24"><polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon></svg>
+                </button>
+
+                <div class="separator"></div>
+
+                <!-- Speed Control -->
+                <div class="speed-control">
+                    <span class="speed-value"><span id="wpm-display">300</span> WPM</span>
+                    <input type="range" id="speed-slider" min="60" max="1000" step="10" value="300">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast">Message</div>
+
+    <script>
+        /**
+         * FocusReader Logic
+         * Handles text processing, RSVP rendering loop, and UI interactions.
+         */
+
+        // --- State Management ---
+        const state = {
+            words: [],
+            currentIndex: 0,
+            isPlaying: false,
+            wpm: 300,
+            theme: 'light',
+            timerId: null,
+            chunkSize: 1 // Words per chunk (RSVP usually 1)
+        };
+
+        // --- DOM Elements ---
+        const elements = {
+            setupView: document.getElementById('setup-view'),
+            readerView: document.getElementById('reader-view'),
+            textInput: document.getElementById('text-input'),
+            wordCountPreview: document.getElementById('word-count-preview'),
+            estTime: document.getElementById('est-time'),
+            startBtn: document.getElementById('start-btn'),
+            wordContainer: document.getElementById('word-container'),
+            progressBar: document.getElementById('progress-bar'),
+            progressText: document.getElementById('progress-text'),
+            playPauseBtn: document.getElementById('play-pause-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            rewindBtn: document.getElementById('rewind-btn'),
+            forwardBtn: document.getElementById('forward-btn'),
+            iconPlay: document.getElementById('icon-play'),
+            iconPause: document.getElementById('icon-pause'),
+            speedSlider: document.getElementById('speed-slider'),
+            wpmDisplay: document.getElementById('wpm-display'),
+            themeBtn: document.getElementById('theme-btn'),
+            iconSun: document.getElementById('icon-sun'),
+            iconMoon: document.getElementById('icon-moon'),
+            toast: document.getElementById('toast')
+        };
+
+        // --- Initialization ---
+        function init() {
+            // Load theme preference
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+
+            // Add Event Listeners
+            elements.textInput.addEventListener('input', handleInput);
+            elements.startBtn.addEventListener('click', startReading);
+            elements.playPauseBtn.addEventListener('click', togglePlayPause);
+            elements.restartBtn.addEventListener('click', restartReading);
+            elements.rewindBtn.addEventListener('click', () => jumpWords(-10));
+            elements.forwardBtn.addEventListener('click', () => jumpWords(10));
+            elements.speedSlider.addEventListener('input', handleSpeedChange);
+            elements.themeBtn.addEventListener('click', toggleTheme);
+            
+            // Keyboard Shortcuts
+            document.addEventListener('keydown', handleKeydown);
+        }
+
+        // --- Core Logic ---
+
+        // 1. Process Text
+        function handleInput() {
+            const text = elements.textInput.value.trim();
+            if (!text) {
+                elements.wordCountPreview.textContent = "0 words";
+                elements.estTime.textContent = "0 min";
+                return;
+            }
+
+            // Simple split by whitespace, filters out empty strings
+            const words = text.split(/\s+/).filter(w => w.length > 0);
+            elements.wordCountPreview.textContent = `${words.length} words`;
+            
+            const minutes = words.length / state.wpm;
+            const roundedMin = Math.ceil(minutes);
+            elements.estTime.textContent = roundedMin < 1 ? "< 1 min" : `~${roundedMin} min`;
+        }
+
+        function prepareText(text) {
+            // Normalize newlines and multiple spaces, then split
+            // We keep punctuation attached to the word for natural pauses logic later if needed
+            // For now, just splitting by whitespace.
+            return text.trim().split(/\s+/).filter(w => w.length > 0);
+        }
+
+        // 2. Reading Control
+        function startReading() {
+            const rawText = elements.textInput.value;
+            if (!rawText.trim()) {
+                showToast("Please enter some text first.");
+                return;
+            }
+
+            state.words = prepareText(rawText);
+            state.currentIndex = 0;
+            
+            // Switch Views
+            elements.setupView.style.display = 'none';
+            elements.readerView.style.display = 'flex';
+            
+            // Update Progress UI max
+            updateProgressUI();
+            
+            // Start
+            play();
+        }
+
+        function stopReading() {
+            pause();
+            elements.readerView.style.display = 'none';
+            elements.setupView.style.display = 'flex';
+            state.words = [];
+            state.currentIndex = 0;
+        }
+
+        function togglePlayPause() {
+            if (state.isPlaying) pause();
+            else play();
+        }
+
+        function play() {
+            if (state.currentIndex >= state.words.length) {
+                restartReading(); // Auto restart if at end
+                return;
+            }
+            state.isPlaying = true;
+            updatePlayPauseIcon();
+            renderLoop();
+        }
+
+        function pause() {
+            state.isPlaying = false;
+            updatePlayPauseIcon();
+            clearTimeout(state.timerId);
+        }
+
+        function restartReading() {
+            pause();
+            state.currentIndex = 0;
+            updateProgressUI();
+            displayWord(0); // Show first word
+            // Don't auto play on restart, let user choose
+        }
+
+        function jumpWords(amount) {
+            let newIndex = state.currentIndex + amount;
+            // Boundary checks
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= state.words.length) newIndex = state.words.length - 1;
+            
+            state.currentIndex = newIndex;
+            updateProgressUI();
+            displayWord(state.currentIndex);
+        }
+
+        function handleSpeedChange(e) {
+            state.wpm = parseInt(e.target.value);
+            elements.wpmDisplay.textContent = state.wpm;
+            // If playing, the next renderLoop iteration will pick up the new WPM
+        }
+
+        // 3. The Rendering Loop (Timing Engine)
+        function renderLoop() {
+            if (!state.isPlaying) return;
+
+            // Check if finished
+            if (state.currentIndex >= state.words.length) {
+                pause();
+                showToast("Finished reading!");
+                return;
+            }
+
+            // Display current word
+            displayWord(state.currentIndex);
+            updateProgressUI();
+
+            // Calculate delay for NEXT word
+            // Formula: 60000ms / WPM
+            // Advanced RSVP logic often adds delay for "long" words or punctuation, 
+            // but for this simple tool, we stick to constant WPM for smooth rhythm.
+            let delay = 60000 / state.wpm;
+
+            // Optional: Pause slightly longer on punctuation (period, comma, etc.)
+            const currentWord = state.words[state.currentIndex];
+            const lastChar = currentWord.slice(-1);
+            if (['.', '!', '?', ':', ';'].includes(lastChar)) {
+                delay += 200; // Add 200ms pause
+            } else if ([',', '-', ';'].includes(lastChar)) {
+                delay += 100; // Add 100ms pause
+            }
+
+            state.currentIndex++;
+
+            // Schedule next frame
+            state.timerId = setTimeout(renderLoop, delay);
+        }
+
+        // 4. Display Word with Optical Alignment
+        function displayWord(index) {
+            const word = state.words[index];
+            if (!word) return;
+
+            // Logic to find the "pivot" letter (the red letter)
+            // RSVP research suggests the optimal pivot point is around 35-40% into the word 
+            // (or slightly left of center) to minimize saccades.
+            
+            let pivotIndex;
+            const length = word.length;
+
+            if (length === 1) {
+                pivotIndex = 0;
+            } else if (length >= 2 && length <= 5) {
+                pivotIndex = 1; // Second letter
+            } else if (length >= 6 && length <= 9) {
+                pivotIndex = 2; // Third letter
+            } else if (length >= 10 && length <= 13) {
+                pivotIndex = 3; // Fourth letter
+            } else {
+                pivotIndex = 4; // Fifth letter
+            }
+
+            // Split the word into Before, Pivot, After
+            const before = word.substring(0, pivotIndex);
+            const pivot = word.substring(pivotIndex, pivotIndex + 1);
+            const after = word.substring(pivotIndex + 1);
+
+            // Construct HTML
+            // Note: Using inline-block on spans ensures the center stays relative to the pivot
+            elements.wordContainer.innerHTML = `
+                <span style="display:inline-block; text-align:right; width:${before.length * 0.6}em;">${before}</span>
+                <span class="pivot-letter">${pivot}</span>
+                <span style="display:inline-block; text-align:left; width:${after.length * 0.6}em;">${after}</span>
+            `;
+        }
+
+        // 5. UI Updates
+        function updateProgressUI() {
+            const total = state.words.length;
+            const current = state.currentIndex; // Note: current is the *next* index to read in loop, but strictly speaking for display we want 1-based or 0-based relative to shown word
+            // In renderLoop, we display word at `currentIndex` THEN increment.
+            // So if index is 0, we display word 0.
+            
+            const percent = (state.currentIndex / total) * 100;
+            elements.progressBar.style.width = `${percent}%`;
+            
+            // Adjust displayed index because we increment immediately after display logic in loop
+            // However, if we pause, `currentIndex` points to the *next* word. 
+            // Let's adjust display to be intuitive: "Word X of Y"
+            let displayIndex = state.currentIndex + 1;
+            if (displayIndex > total) displayIndex = total;
+            
+            elements.progressText.textContent = `${displayIndex} / ${total}`;
+        }
+
+        function updatePlayPauseIcon() {
+            if (state.isPlaying) {
+                elements.iconPlay.style.display = 'none';
+                elements.iconPause.style.display = 'block';
+            } else {
+                elements.iconPlay.style.display = 'block';
+                elements.iconPause.style.display = 'none';
+            }
+        }
+
+        // 6. Theme Handling
+        function toggleTheme() {
+            const newTheme = state.theme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        function setTheme(themeName) {
+            state.theme = themeName;
+            document.documentElement.setAttribute('data-theme', themeName);
+            localStorage.setItem('theme', themeName);
+
+            if (themeName === 'dark') {
+                elements.iconSun.style.display = 'block';
+                elements.iconMoon.style.display = 'none';
+            } else {
+                elements.iconSun.style.display = 'none';
+                elements.iconMoon.style.display = 'block';
+            }
+        }
+
+        // 7. Utilities
+        function showToast(msg) {
+            elements.toast.textContent = msg;
+            elements.toast.classList.add('show');
+            setTimeout(() => {
+                elements.toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function handleKeydown(e) {
+            // Ignore if typing in the textarea
+            if (document.activeElement === elements.textInput) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault(); // Prevent scrolling
+                togglePlayPause();
+            } else if (e.code === 'ArrowLeft') {
+                // Slow down
+                let newWpm = state.wpm - 20;
+                if (newWpm < 60) newWpm = 60;
+                elements.speedSlider.value = newWpm;
+                handleSpeedChange({target: {value: newWpm}});
+                showToast(`Speed: ${newWpm} WPM`);
+            } else if (e.code === 'ArrowRight') {
+                // Speed up
+                let newWpm = state.wpm + 20;
+                if (newWpm > 1000) newWpm = 1000;
+                elements.speedSlider.value = newWpm;
+                handleSpeedChange({target: {value: newWpm}});
+                showToast(`Speed: ${newWpm} WPM`);
+            } else if (e.code === 'Escape') {
+                if (elements.readerView.style.display === 'flex') {
+                    stopReading();
+                }
+            }
+        }
+
+        // Run
+        init();
+
+    </script>
+</body>
+</html>
