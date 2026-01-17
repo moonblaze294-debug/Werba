@@ -1,0 +1,79 @@
+{
+  "background_color": "#ffffff",
+  "description": "Read faster. Focus deeper. One word at a time.\nWerba is a minimalist speed-reading app designed to help you read with better focus, less eye strain, and greater efficiency.\nInstead of scanning lines of text, Verba presents content one word at a time, allowing your brain to process information faster while reducing distractions and unnecessary eye movement.\nWhether you’re a student, a professional, or an avid reader, Verba helps you get through more content in less time — without sacrificing understanding.\n✨ Key Features\nOne-word-at-a-time reading for maximum focus\nAdjustable reading speed — slow down or speed up anytime\nClean, distraction-free interface\nLarge, readable text for comfortable viewing\nPause, resume, and restart whenever you want\n🎯 Who is Werba for?\nStudents with heavy reading loads\nExam and competitive test preparation\nLong articles, notes, and study material\nAnyone who struggles with focus while reading\n🧠 Why Werba works\nTraditional reading wastes time on eye movements.\nVerba keeps your eyes still and lets your brain do what it does best — process words quickly.\n🔒 Privacy First\nYour text stays with you.\nWerba does not sell or share your data.",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Werba",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Werba",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://cpwebassets.codepen.io/assets/favicon/favicon-aec34940fbc1a6e787974dcd360f2c6b63348d4b1f4e06c77743096d55480f33.ico",
+      "type": "image/x-icon",
+      "sizes": "48x48",
+      "isSquare": true,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 48,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://cpwebassets.codepen.io/assets/favicon/apple-touch-icon-5ae1a0698dcc2402e9712f7d01ed509a57814f994c660df9f7a952f3060705ee.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 180,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://cpwebassets.codepen.io/assets/favicon/logo-pin-b4b4269c16397ad2f0f7a01bcdf513a1994f4c94b8af2f191c09eb0d601762b1.svg",
+      "type": "image/x-icon",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 0,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://shots.codepen.io/username/pen/JoKWOoN-800.jpg?version=1768672390",
+      "type": "image/jpeg",
+      "sizes": "800x450",
+      "isSquare": false,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": true,
+      "width": 800,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://codepen.io/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "48x48",
+      "isSquare": true,
+      "isPng": false,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 48,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "Werba"
+}
